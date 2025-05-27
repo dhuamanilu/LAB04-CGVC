@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1522820540}
-  m_IndirectSpecularColor: {r: 0.08596018, g: 0.13642588, b: 0.32298627, a: 1}
+  m_IndirectSpecularColor: {r: 0.085960306, g: 0.13642606, b: 0.32298666, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -691,7 +691,7 @@ GameObject:
   - component: {fileID: 590879608}
   m_Layer: 0
   m_Name: PlayerCamera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1069,6 +1069,12 @@ MonoBehaviour:
   weaponParentSocket: {fileID: 363981165}
   defaultWeaponPosition: {fileID: 1235560345}
   aimingPosition: {fileID: 1196999232}
+  aimFOV: 30
+  aimSpeed: 10
+  aimReticle: {fileID: 0}
+  scopeCamera: {fileID: 0}
+  scopeView: {fileID: 0}
+  scopeOverlay: {fileID: 0}
 --- !u!1 &1146966525
 GameObject:
   m_ObjectHideFlags: 0
