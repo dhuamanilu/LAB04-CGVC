@@ -79,7 +79,7 @@ public class PlayerWeaponManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
             SwitchWeapon(0);
-        // Añade más teclas (Alpha2, Alpha3...) para más slots si quieres
+       
     }
 
     private void HandleAim()
@@ -105,7 +105,6 @@ public class PlayerWeaponManager : MonoBehaviour
             Time.deltaTime * aimSpeed
         );
 
-        // Si tienes cámara de scope asignada, alterna entre cámaras
         if (scopeCamera != null && scopeView != null && scopeOverlay != null)
         {
             scopeCamera.enabled      = isAiming;

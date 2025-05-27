@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerControllerv2 : MonoBehaviour
 {
-    [Header ("References")]
+    [Header("References")]
     public Camera playerCamera;
 
-    [Header ("General")]
+    [Header("General")]
     public float gravityScale = -20f;
 
-    [Header ("Movement")]
+    [Header("Movement")]
     public float walkSpeed = 5f;
     public float runSpeed = 10f;
 
@@ -35,12 +35,26 @@ public class PlayerController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
     }
-
+    public KeyCode interactKey = KeyCode.E;
+    public Scene3Manager sceneManager;
     private void Update()
     {
         Look();
         Move();
-
+        /*if (Input.GetKeyDown(interactKey))
+        {
+          
+            float distanceToCar = Vector3.Distance(transform.position, sceneManager.carController.transform.position);
+            if (distanceToCar < 3f) // Si está a menos de 3 unidades
+            {
+                sceneManager.SwitchToCarControl();
+                // Aquí también deberías "esconder" o posicionar el personaje dentro del coche.
+                // Por ejemplo, hacer al personaje hijo del coche y resetear su posición local.
+                transform.SetParent(sceneManager.carController.transform);
+                transform.localPosition = Vector3.zero; // O una posición específica de asiento
+                gameObject.SetActive(false); // Desactivar el GO del jugador
+            }
+        }*/
     }
 
     private void Move()
@@ -78,7 +92,7 @@ public class PlayerController : MonoBehaviour
         cameraVerticalAngle = Mathf.Clamp(cameraVerticalAngle, -70, 70);
 
         transform.Rotate(Vector3.up * rotationinput.x);
-        playerCamera.transform.localRotation = Quaternion.Euler(-cameraVerticalAngle,0f,0f);
+        playerCamera.transform.localRotation = Quaternion.Euler(-cameraVerticalAngle, 0f, 0f);
     }
 
 }
