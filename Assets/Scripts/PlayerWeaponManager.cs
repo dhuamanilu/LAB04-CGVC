@@ -1,63 +1,153 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerWeaponManager : MonoBehaviour
 {
+    [Header("Weapons")]
     public List<WeaponController> startingWeapons = new List<WeaponController>();
-
-    [Header ("References")]
     public Transform weaponParentSocket;
-    public Transform defaultWeaponPosition;
-    public Transform aimingPosition;
 
-    public int activeWeaponIndex { get; private set; }
+    [Header("Positions")]
+    public Transform defaultWeaponPosition;  // DefaultParentSocket
+    public Transform aimingPosition;         // AimParentSocket
+
+    [Header("Aim Settings")]
+    public float aimFOV = 30f;
+    public float aimSpeed = 10f;
+
+    [Header("UI")]
+    public Image aimReticle;
+
+    [HideInInspector] public int activeWeaponIndex { get; private set; }
 
     private WeaponController[] weaponSlots = new WeaponController[5];
+    private Camera playerCamera;
+    private float defaultFOV;
+    private bool isAiming = false;
 
-    // Start is called before the first frame update
     void Start()
     {
-        activeWeaponIndex = -1;
+        // Obtiene la cámara principal
+        playerCamera = Camera.main;
+        if (playerCamera == null)
+            Debug.LogError("PlayerWeaponManager: Necesitas una cámara etiquetada como MainCamera.");
+        else
+            defaultFOV = playerCamera.fieldOfView;
 
-        foreach (WeaponController startingWeapon in startingWeapons)
+        // Verifica que las referencias estén asignadas
+        if (weaponParentSocket == null || defaultWeaponPosition == null || aimingPosition == null)
+            Debug.LogError("PlayerWeaponManager: Faltan referencias de sockets en el Inspector.");
+
+        if (aimReticle == null)
+            Debug.LogWarning("PlayerWeaponManager: No hay AimReticle asignado. La mira no aparecerá.");
+
+        // Inicializa slots e instancia armas
+        activeWeaponIndex = -1;
+        foreach (var prefab in startingWeapons)
+            AddWeapon(prefab);
+
+        // 3. Auto-equipar la primera arma disponible
+        for (int i = 0; i < weaponSlots.Length; i++)
         {
-            AddWeapon(startingWeapon);
+            if (weaponSlots[i] != null)
+            {
+                SwitchWeapon(i);
+                break;
+            }
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
+        HandleSwitchWeapon();
+        HandleAim();
+        HandleFire();
+    }
+
+    private void HandleSwitchWeapon()
+    {
         if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
             SwitchWeapon(0);
-        }
+        // Añade más teclas si quieres más slots
     }
 
-    private void SwitchWeapon(int p_weaponIndex)
+    private void HandleAim()
     {
-        if (p_weaponIndex != activeWeaponIndex && p_weaponIndex >= 0)
+        // Right-click down/up
+        if (Input.GetMouseButtonDown(1)) isAiming = true;
+        if (Input.GetMouseButtonUp(1))   isAiming = false;
+
+        // Retícula UI
+        if (aimReticle != null)
+            aimReticle.enabled = isAiming;
+
+        // Transición suave de posición y rotación
+        Transform target = isAiming ? aimingPosition : defaultWeaponPosition;
+        weaponParentSocket.position = Vector3.Lerp(
+            weaponParentSocket.position,
+            target.position,
+            Time.deltaTime * aimSpeed
+        );
+        weaponParentSocket.rotation = Quaternion.Slerp(
+            weaponParentSocket.rotation,
+            target.rotation,
+            Time.deltaTime * aimSpeed
+        );
+
+        // Transición suave de FOV
+        if (playerCamera != null)
         {
-            weaponSlots[p_weaponIndex].gameObject.SetActive(true);
-            activeWeaponIndex = p_weaponIndex;
+            float targetFOV = isAiming ? aimFOV : defaultFOV;
+            playerCamera.fieldOfView = Mathf.MoveTowards(
+            playerCamera.fieldOfView,
+            targetFOV,
+            aimSpeed * Time.deltaTime
+        );
         }
     }
 
-    private void AddWeapon(WeaponController p_weaponPrefab)
+    private void HandleFire()
     {
-        weaponParentSocket.position = defaultWeaponPosition.position;
+        if (Input.GetMouseButtonDown(0) && activeWeaponIndex >= 0)
+        {
+            weaponSlots[activeWeaponIndex].TryShoot();
+        }
+    }
 
-        //Añadir arma al jugador pero no mostrarla
-        for (int i = 0; i<weaponSlots.Length; i++)
+    private void SwitchWeapon(int index)
+    {
+        // Índice inválido o mismo slot → nada que hacer
+        if (index < 0 || index >= weaponSlots.Length || index == activeWeaponIndex)
+            return;
+
+        // Slot vacío → avisar y salir
+        if (weaponSlots[index] == null)
+        {
+            Debug.LogWarning($"PlayerWeaponManager: No hay ningún arma en el slot {index}.");
+            return;
+        }
+
+        // Desactiva el arma anterior
+        if (activeWeaponIndex >= 0 && weaponSlots[activeWeaponIndex] != null)
+            weaponSlots[activeWeaponIndex].gameObject.SetActive(false);
+
+        // Activa la nueva arma
+        weaponSlots[index].gameObject.SetActive(true);
+        activeWeaponIndex = index;
+    }
+
+    private void AddWeapon(WeaponController prefab)
+    {
+        for (int i = 0; i < weaponSlots.Length; i++)
         {
             if (weaponSlots[i] == null)
             {
-                WeaponController weaponClone = Instantiate(p_weaponPrefab, weaponParentSocket);
-                weaponClone.owner = gameObject;
-                weaponClone.gameObject.SetActive(false);
-
-                weaponSlots[i] = weaponClone;
+                var clone = Instantiate(prefab, weaponParentSocket);
+                clone.owner = gameObject;
+                clone.gameObject.SetActive(false);
+                weaponSlots[i] = clone;
                 return;
             }
         }

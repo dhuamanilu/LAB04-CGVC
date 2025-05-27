@@ -55,7 +55,7 @@ public class WeaponController : MonoBehaviour
         transform.localPosition = Vector3.Lerp(transform.localPosition, Vector3.zero, Time.deltaTime * 5f);
     }
 
-    private bool TryShoot()
+    public bool TryShoot()
     {
         if (lastTimeShoot + fireRate < Time.time)
         {
