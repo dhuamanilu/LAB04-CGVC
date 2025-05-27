@@ -13,12 +13,15 @@ public class PlayerWeaponManager : MonoBehaviour
     public Transform defaultWeaponPosition;  // DefaultParentSocket
     public Transform aimingPosition;         // AimParentSocket
 
-    [Header("Aim Settings")]
+    [Header("Aim Settings (FOV Zoom)")]
     public float aimFOV = 30f;
     public float aimSpeed = 10f;
+    public Image aimReticle;                 // simple crosshair UI
 
-    [Header("UI")]
-    public Image aimReticle;
+    [Header("Scope Setup (Sniper Zoom)")]
+    public Camera scopeCamera;               // secondary camera rendering to texture
+    public RawImage scopeView;               // RawImage showing the scope RenderTexture
+    public Image scopeOverlay;               // scope border graphic
 
     [HideInInspector] public int activeWeaponIndex { get; private set; }
 
@@ -29,26 +32,32 @@ public class PlayerWeaponManager : MonoBehaviour
 
     void Start()
     {
-        // Obtiene la cámara principal
+        // Cámara principal
         playerCamera = Camera.main;
         if (playerCamera == null)
-            Debug.LogError("PlayerWeaponManager: Necesitas una cámara etiquetada como MainCamera.");
+            Debug.LogError("PlayerWeaponManager: No se encontró Camera.main. Asegura la etiqueta MainCamera.");
         else
             defaultFOV = playerCamera.fieldOfView;
 
-        // Verifica que las referencias estén asignadas
+        // Verificar referencias
         if (weaponParentSocket == null || defaultWeaponPosition == null || aimingPosition == null)
             Debug.LogError("PlayerWeaponManager: Faltan referencias de sockets en el Inspector.");
-
         if (aimReticle == null)
-            Debug.LogWarning("PlayerWeaponManager: No hay AimReticle asignado. La mira no aparecerá.");
+            Debug.LogWarning("PlayerWeaponManager: No se asignó AimReticle. No se mostrará crosshair simple.");
+        if ((scopeCamera == null) ^ (scopeView == null) ^ (scopeOverlay == null))
+            Debug.LogWarning("PlayerWeaponManager: Debes asignar todos los campos de Scope (Camera, RawImage, Overlay) o ninguno.");
 
-        // Inicializa slots e instancia armas
+        // Desactivar scope al inicio
+        if (scopeCamera  != null) scopeCamera.enabled  = false;
+        if (scopeView    != null) scopeView.enabled    = false;
+        if (scopeOverlay != null) scopeOverlay.enabled = false;
+
+        // Instanciar armas
         activeWeaponIndex = -1;
         foreach (var prefab in startingWeapons)
             AddWeapon(prefab);
 
-        // 3. Auto-equipar la primera arma disponible
+        // Auto-equipar primera arma disponible
         for (int i = 0; i < weaponSlots.Length; i++)
         {
             if (weaponSlots[i] != null)
@@ -70,41 +79,51 @@ public class PlayerWeaponManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
             SwitchWeapon(0);
-        // Añade más teclas si quieres más slots
+        // Añade más teclas (Alpha2, Alpha3...) para más slots si quieres
     }
 
     private void HandleAim()
     {
-        // Right-click down/up
+        // Detectar right-click down/up
         if (Input.GetMouseButtonDown(1)) isAiming = true;
         if (Input.GetMouseButtonUp(1))   isAiming = false;
 
-        // Retícula UI
+        // Mostrar crosshair simple solo si no tienes scopeCamera
         if (aimReticle != null)
-            aimReticle.enabled = isAiming;
+            aimReticle.enabled = isAiming && scopeCamera == null;
 
-        // Transición suave de posición y rotación
-        Transform target = isAiming ? aimingPosition : defaultWeaponPosition;
+        // Mover arma suavemente
+        Transform targetSocket = isAiming ? aimingPosition : defaultWeaponPosition;
         weaponParentSocket.position = Vector3.Lerp(
             weaponParentSocket.position,
-            target.position,
+            targetSocket.position,
             Time.deltaTime * aimSpeed
         );
         weaponParentSocket.rotation = Quaternion.Slerp(
             weaponParentSocket.rotation,
-            target.rotation,
+            targetSocket.rotation,
             Time.deltaTime * aimSpeed
         );
 
-        // Transición suave de FOV
-        if (playerCamera != null)
+        // Si tienes cámara de scope asignada, alterna entre cámaras
+        if (scopeCamera != null && scopeView != null && scopeOverlay != null)
         {
+            scopeCamera.enabled      = isAiming;
+            scopeView.enabled        = isAiming;
+            scopeOverlay.enabled     = isAiming;
+
+            if (playerCamera != null)
+                playerCamera.enabled = !isAiming;
+        }
+        else if (playerCamera != null)
+        {
+            // Zoom simple por FOV
             float targetFOV = isAiming ? aimFOV : defaultFOV;
-            playerCamera.fieldOfView = Mathf.MoveTowards(
-            playerCamera.fieldOfView,
-            targetFOV,
-            aimSpeed * Time.deltaTime
-        );
+            playerCamera.fieldOfView = Mathf.Lerp(
+                playerCamera.fieldOfView,
+                targetFOV,
+                Time.deltaTime * aimSpeed
+            );
         }
     }
 
@@ -118,22 +137,22 @@ public class PlayerWeaponManager : MonoBehaviour
 
     private void SwitchWeapon(int index)
     {
-        // Índice inválido o mismo slot → nada que hacer
+        // Validar índice
         if (index < 0 || index >= weaponSlots.Length || index == activeWeaponIndex)
             return;
 
-        // Slot vacío → avisar y salir
+        // Slot vacío → warning y salir
         if (weaponSlots[index] == null)
         {
-            Debug.LogWarning($"PlayerWeaponManager: No hay ningún arma en el slot {index}.");
+            Debug.LogWarning($"PlayerWeaponManager: No hay arma en slot {index}.");
             return;
         }
 
-        // Desactiva el arma anterior
+        // Desactivar arma actual
         if (activeWeaponIndex >= 0 && weaponSlots[activeWeaponIndex] != null)
             weaponSlots[activeWeaponIndex].gameObject.SetActive(false);
 
-        // Activa la nueva arma
+        // Activar nueva arma
         weaponSlots[index].gameObject.SetActive(true);
         activeWeaponIndex = index;
     }
