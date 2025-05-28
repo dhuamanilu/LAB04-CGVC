@@ -5,15 +5,20 @@ using UnityEngine;
 public class Scene3Manager : MonoBehaviour
 {
     // Start is called before the first frame update
-    /*public enum ControlState { Player, Car }
+    public enum ControlState { Player, Car }
     public ControlState currentControlState;
     public PlayerController playerController;
     public CarController carController;
-    public Cinemachine.CinemachineVirtualCamera playerVirtualCamera; // Asigna tu VCam del jugador aquí
-    public Cinemachine.CinemachineVirtualCamera carVirtualCamera;   // Asigna tu VCam del coche aquí
-                                                                    // Puedes añadir más cámaras si es necesario (ej. interior del coche)
+    public Camera playerCameraComponent; 
+    public Camera carCameraComponent;   
+                                                                     
     void Start()
     {
+        if (playerController == null || carController == null)
+        {
+            Debug.LogError("PlayerController o CarController no asignados en Scene3Manager!");
+            return;
+        }
         SwitchToPlayerControl();
     }
 
@@ -22,36 +27,40 @@ public class Scene3Manager : MonoBehaviour
     {
         
     }
+    // En Scene3Manager.cs
     public void SwitchToPlayerControl()
     {
         currentControlState = ControlState.Player;
 
-        playerController.enabled = true;
-        carController.enabled = false; // Desactiva el script del coche
+        playerController.enabled = true; // Habilita el componente PlayerControllerv2
+        if (playerCameraComponent != null)
+        {
+            playerCameraComponent.enabled = true; // activate the camera
+        }
 
-        // Activar cámara del jugador y desactivar la del coche
-        // En Cinemachine, esto se hace cambiando la prioridad o activando/desactivando GameObjects de VCam
-        playerVirtualCamera.Priority = 10;
-        carVirtualCamera.Priority = 5; // Menor prioridad para la cámara inactiva
+        carController.enabled = false; // Deshabilita el componente CarController
+                                       // Si el carro tiene una cámara, deshabilita su GameObject o el componente Camera.
+                                       // Ejemplo: if (carController.GetComponentInChildren<Camera>() != null) carController.GetComponentInChildren<Camera>().gameObject.SetActive(false);
+        if (carCameraComponent != null)
+        {
+            carCameraComponent.enabled = false; // Deactivate the camera
+        }
+        // Manejo de cámaras Cinemachine (si las usas)
+        // if (playerVirtualCamera != null) playerVirtualCamera.Priority = 10;
 
-       
-        playerController.gameObject.SetActive(true);
-        // carController.gameObject.SetActive(false); // ¡Cuidado con esto si el coche debe seguir existiendo!
-        
     }
 
     public void SwitchToCarControl()
     {
         currentControlState = ControlState.Car;
 
-        playerController.enabled = false; // Desactiva el script del jugador
-        carController.enabled = true;
+        playerController.enabled = false; // Deshabilita el componente PlayerControllerv2
+        if (playerController.playerCamera != null) playerController.playerCamera.gameObject.SetActive(false);
 
-        // Activar cámara del coche y desactivar la del jugador
-        carVirtualCamera.Priority = 10;
-        playerVirtualCamera.Priority = 5;
+        carController.enabled = true; // Habilita el componente CarController
+                                      // Si el carro tiene una cámara, habilita su GameObject o el componente Camera.
+                                      // Ejemplo: if (carController.GetComponentInChildren<Camera>() != null) carController.GetComponentInChildren<Camera>().gameObject.SetActive(true);
 
-        // Podrías mover/desactivar al personaje para que "entre" al coche
-        // playerController.gameObject.SetActive(false);
-    }*/
+
+    }
 }
