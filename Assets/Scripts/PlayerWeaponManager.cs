@@ -111,8 +111,7 @@ public class PlayerWeaponManager : MonoBehaviour
             scopeView.enabled        = isAiming;
             scopeOverlay.enabled     = isAiming;
 
-            if (playerCamera != null)
-                playerCamera.enabled = !isAiming;
+            
         }
         else if (playerCamera != null)
         {
